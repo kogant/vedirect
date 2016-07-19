@@ -1,10 +1,16 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
+# Modified to upload(post) data to Emoncms.org - Kogant
+# Run in cron
+# # m h  dom mon dow   command
+# * * * * * /opt/vedirect/vedirect.py  2>&1 | /usr/bin/logger -t veDirectStats
 
-import os, serial 
+import os, serial, datetime, time, httplib, sys
+
+# apikey emoncms account (change it)
+apikey = "" # ie: ff227081609c5f57f2f536b4411a915ba
 
 class vedirect:
-
     def __init__(self, serialport):
         self.serialport = serialport
         self.ser = serial.Serial(serialport, 19200, timeout=10)
@@ -16,7 +22,6 @@ class vedirect:
         self.bytes_sum = 0;
         self.state = self.WAIT_HEADER
         self.dict = {}
-
 
     (WAIT_HEADER, IN_KEY, IN_VALUE, IN_CHECKSUM) = range(4)
 
@@ -83,14 +88,31 @@ class vedirect:
             if (packet != None):
                 callbackFunction(packet)
         
-
+domain="emoncms.org"
+baseurl="/input/post.json?apikey="+apikey+"&json="
 
 def print_data_callback(data):
-    print data
+    # global variable
+    data=repr(data)
+    data=data.replace(" ","") # no spaces allowed
+    print(data)
+    try:
+       conn = httplib.HTTPSConnection(domain)
+    except:
+       print("Failed connecting to "+domain)
+       sys.exit(1)
+    else:
+       print("Connected successfully to "+domain)
+    try:
+       conn.request("POST", baseurl+data)
+    except:
+       print("Failed uploading data")
+       sys.exit(1)
+    else:
+       print("Uploaded data OK")
+       sys.exit(0)
+    #time.sleep(60)
 
 if __name__ == '__main__':
-    ve = vedirect('/tmp/vmodem1')
+    ve = vedirect('/dev/ttyUSB0') # Verify this simply by looking at /var/log/syslog when inserting cable.
     ve.read_data_callback(print_data_callback)
-    #print(ve.read_data_single())
-    
-
