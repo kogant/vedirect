@@ -92,7 +92,6 @@ domain="emoncms.org"
 baseurl="/input/post.json?apikey="+apikey+"&json="
 
 def print_data_callback(data):
-    # global variable
     data=repr(data)
     data=data.replace(" ","") # no spaces allowed
     print(data)
